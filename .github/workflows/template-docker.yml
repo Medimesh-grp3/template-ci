@@ -33,7 +33,7 @@ on:
 
 jobs:
   docker:
-    name: "④⑤⑥ Docker — ${{ inputs.service_name }}"
+    name: "4,5,6 Docker — ${{ inputs.service_name }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -84,7 +84,7 @@ jobs:
           echo "  SHA    : v${VERSION}-${SHORT_SHA}"
           echo "════════════════════════════════════════"
 
-      - name: "④ Build Docker Image"
+      - name: "4. Build Docker Image"
         run: |
           docker build \
             -t ${{ steps.meta.outputs.tag_version }} \
@@ -93,7 +93,7 @@ jobs:
             -f ${{ inputs.service_path }}/Dockerfile \
             ${{ inputs.service_path }}
 
-      - name: "⑤ Trivy — Container Scan"
+      - name: "5. Trivy — Container Scan"
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
@@ -103,14 +103,14 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
 
-      - name: "⑥ Push Docker Image to DockerHub"
+      - name: "6. Push Docker Image to DockerHub"
         if: github.event_name != 'pull_request'
         run: |
-          echo "🚀 Pushing images..."
+          echo "Pushing images..."
           docker push ${{ steps.meta.outputs.tag_version }}
           docker push ${{ steps.meta.outputs.tag_sha }}
           docker push ${{ steps.meta.outputs.tag_latest }}
-          echo "✅ All tags pushed"
+          echo "All tags pushed"
 
       - name: Send Email on Failure
         if: failure()
@@ -120,11 +120,11 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "❌ MediMesh CI Failed — Docker (${{ inputs.service_name }})"
+          subject: "MediMesh CI Failed — Docker (${{ inputs.service_name }})"
           to: ${{ secrets.ALERT_EMAIL }}
           from: MediMesh CI Pipeline
           body: |
-            ❌ Docker build/push FAILED for: ${{ inputs.service_name }}
+            Docker build/push FAILED for: ${{ inputs.service_name }}
 
             Image  : ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.docker_image_name }}
             Branch : ${{ github.ref_name }}

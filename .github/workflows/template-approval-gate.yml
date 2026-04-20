@@ -26,7 +26,7 @@ on:
 
 jobs:
   approval-gate:
-    name: "🛑 Approval Gate — ${{ inputs.service_name }}"
+    name: " Approval Gate — ${{ inputs.service_name }}"
     runs-on: ubuntu-latest
     environment: Prod
 

@@ -1,0 +1,194 @@
+name: "Template — OIDC Direct Deploy"
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: "Service name (e.g. medimesh-vitals)"
+        required: true
+        type: string
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: true
+        type: string
+      rollout_name:
+        description: "Argo Rollout name in cluster"
+        required: true
+        type: string
+      container_name:
+        description: "Container name inside the Rollout"
+        required: true
+        type: string
+      namespace:
+        description: "Kubernetes namespace"
+        required: true
+        type: string
+      docker_image_name:
+        description: "Full docker image name without tag"
+        required: true
+        type: string
+    secrets:
+      K8S_CA_CERT:
+        required: true
+      K8S_API_SERVER:
+        required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      ALERT_EMAIL:
+        required: true
+
+jobs:
+  oidc-deploy:
+    name: "OIDC Deploy — ${{ inputs.service_name }}"
+    runs-on: self-hosted
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install kubectl-argo-rollouts
+        run: |
+          if ! command -v kubectl-argo-rollouts &> /dev/null; then
+            curl -LO https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-linux-amd64
+            sudo install -o root -g root -m 0755 \
+              kubectl-argo-rollouts-linux-amd64 \
+              /usr/local/bin/kubectl-argo-rollouts
+          fi
+          kubectl argo rollouts version
+
+      - name: Install jq
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+          jq --version
+
+      - name: Get GitHub OIDC token
+        id: oidc
+        run: |
+          TOKEN=$(curl -sSf \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=kubernetes" \
+            | jq -r '.value')
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "❌ OIDC token generation failed!"
+            exit 1
+          fi
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "✅ OIDC token obtained"
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.K8S_CA_CERT }}" | base64 -d > /tmp/ca.crt
+
+          kubectl config set-cluster medimesh-prod \
+            --server=${{ secrets.K8S_API_SERVER }} \
+            --certificate-authority=/tmp/ca.crt \
+            --embed-certs=true
+
+          kubectl config set-credentials github-actions-oidc \
+            --token="${{ steps.oidc.outputs.token }}"
+
+          kubectl config set-context medimesh-prod \
+            --cluster=medimesh-prod \
+            --user=github-actions-oidc \
+            --namespace=${{ inputs.namespace }}
+
+          kubectl config use-context medimesh-prod
+          echo "✅ kubectl configured"
+
+      - name: Verify cluster access
+        run: |
+          echo "🔍 Testing access..."
+          kubectl get rollout ${{ inputs.rollout_name }} \
+            -n ${{ inputs.namespace }}
+          echo "✅ Access confirmed!"
+
+      - name: Deploy new image
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.docker_image_name }}:${{ inputs.image_tag }}"
+          echo "🚀 Deploying: ${IMAGE}"
+
+          kubectl argo rollouts set image ${{ inputs.rollout_name }} \
+            ${{ inputs.container_name }}="${IMAGE}" \
+            -n ${{ inputs.namespace }}
+
+          echo "✅ Image updated to ${{ inputs.image_tag }}"
+
+      - name: Show rollout state
+        if: always()
+        run: |
+          echo "📊 Rollout state:"
+          kubectl argo rollouts get rollout ${{ inputs.rollout_name }} \
+            -n ${{ inputs.namespace }}
+
+          echo ""
+          echo "🐳 Pods:"
+          kubectl get pods \
+            -n ${{ inputs.namespace }} \
+            -l app=${{ inputs.rollout_name }} \
+            -o wide
+
+      - name: Send Success Email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "MediMesh CD — ${{ inputs.service_name }} ${{ inputs.image_tag }} deployed"
+          to: ${{ secrets.ALERT_EMAIL }}
+          from: MediMesh CD Pipeline
+          body: |
+            ════════════════════════════════════════════════════════
+            MediMesh CD — OIDC Deployment Successful
+            ════════════════════════════════════════════════════════
+            Service    : ${{ inputs.service_name }}
+            Image Tag  : ${{ inputs.image_tag }}
+            Namespace  : ${{ inputs.namespace }}
+            Deployed By: ${{ github.actor }}
+            ────────────────────────────────────────────────────────
+            NOTE: Manual promotion required!
+            New version is PREVIEW (Green). Active (Blue) still serving.
+
+            Promote via:
+            kubectl argo rollouts promote ${{ inputs.rollout_name }} -n ${{ inputs.namespace }}
+
+            OR dashboard:
+            http://54.210.105.206:3100/rollouts/${{ inputs.namespace }}
+            ════════════════════════════════════════════════════════
+
+      - name: Send Failure Email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "MediMesh CD FAILED — ${{ inputs.service_name }}"
+          to: ${{ secrets.ALERT_EMAIL }}
+          from: MediMesh CD Pipeline
+          body: |
+            ════════════════════════════════════════════════════════
+            MediMesh CD — OIDC Deployment FAILED
+            ════════════════════════════════════════════════════════
+            Service  : ${{ inputs.service_name }}
+            Image Tag: ${{ inputs.image_tag }}
+            Actor    : ${{ github.actor }}
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ════════════════════════════════════════════════════════

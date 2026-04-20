@@ -31,19 +31,19 @@ jobs:
     environment: Prod
 
     steps:
-      - name: "📧 Send Approval Request Email"
+      - name: "Send Approval Request Email"
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "⏳ Approval Needed — ${{ inputs.service_name }} → ${{ inputs.image_tag }}"
+          subject: "Approval Needed — ${{ inputs.service_name }} → ${{ inputs.image_tag }}"
           to: ${{ secrets.ALERT_EMAIL }}
           from: MediMesh CD Pipeline
           body: |
             ════════════════════════════════════════════════════════════
-            ⏳ MediMesh — DEPLOYMENT APPROVAL REQUIRED
+            MediMesh — DEPLOYMENT APPROVAL REQUIRED
             ════════════════════════════════════════════════════════════
 
             A new Docker image has been built and pushed.
@@ -59,7 +59,7 @@ jobs:
             Branch      : ${{ github.ref_name }}
 
             ────────────────────────────────────────────────────────────
-            ✅ TO APPROVE (deploys to cluster):
+            TO APPROVE (deploys to cluster):
             ────────────────────────────────────────────────────────────
             1. Open this link:
                ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -68,16 +68,16 @@ jobs:
             4. Click "Approve and deploy"
 
             ────────────────────────────────────────────────────────────
-            ❌ TO REJECT (stops pipeline, nothing deploys):
+            TO REJECT (stops pipeline, nothing deploys):
             ────────────────────────────────────────────────────────────
             Same link → Click "Reject"
 
             ════════════════════════════════════════════════════════════
 
-      - name: "✅ Log Approval"
+      - name: "Log Approval"
         run: |
           echo "════════════════════════════════════════"
-          echo "  ✅ Deployment Approved!"
+          echo "  Deployment Approved!"
           echo "  Service     : ${{ inputs.service_name }}"
           echo "  Image Tag   : ${{ inputs.image_tag }}"
           echo "  Values File : helm/${{ inputs.values_key }}/values.yaml"

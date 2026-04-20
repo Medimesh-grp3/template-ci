@@ -43,7 +43,7 @@ on:
         description: "ArgoCD manifest repository (org/repo)"
         required: false
         type: string
-        default: "Medimesh-grp3/ArgoCDrepo"
+        default: "Medimesh-grp3/manifest_repo"
 
     secrets:
       MANIFEST_REPO_PAT:

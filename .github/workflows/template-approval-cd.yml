@@ -285,7 +285,7 @@ jobs:
   approval-gate:
     name: "🛑 Approval Gate — ${{ inputs.service_name }}"
     runs-on: ubuntu-latest
-    environment: production
+    environment: Prod
 
     steps:
       - name: "📧 Send Approval Request Email"

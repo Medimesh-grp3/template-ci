@@ -27,7 +27,7 @@ on:
 
 jobs:
   update-manifest:
-    name: "⑦ CD — ${{ inputs.service_name }}"
+    name: "7. CD — ${{ inputs.service_name }}"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout manifest_repo
@@ -70,11 +70,11 @@ jobs:
             exit 0
           fi
 
-          git commit -m "🚀 cd(${{ inputs.service_name }}): image → ${{ inputs.image_tag }}"
+          git commit -m "cd(${{ inputs.service_name }}): image → ${{ inputs.image_tag }}"
 
           for i in 1 2 3 4 5; do
             git push && break
-            echo "⚠️ Push failed, retry $i/5..."
+            echo "Push failed, retry $i/5..."
             git pull --rebase origin main
             sleep $((i * 2))
           done
@@ -87,12 +87,12 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "🚀 MediMesh CD — ${{ inputs.service_name }} deploying ${{ inputs.image_tag }}"
+          subject: "MediMesh CD — ${{ inputs.service_name }} deploying ${{ inputs.image_tag }}"
           to: ${{ secrets.ALERT_EMAIL }}
           from: MediMesh CD Pipeline
           body: |
             ════════════════════════════════════════════════════
-            🚀 MediMesh CD — Deployment Triggered
+            MediMesh CD — Deployment Triggered
             ════════════════════════════════════════════════════
 
             Service    : ${{ inputs.service_name }}
@@ -113,11 +113,11 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "❌ MediMesh CD Failed — ${{ inputs.service_name }}"
+          subject: "MediMesh CD Failed — ${{ inputs.service_name }}"
           to: ${{ secrets.ALERT_EMAIL }}
           from: MediMesh CD Pipeline
           body: |
-            ❌ CD manifest update FAILED for: ${{ inputs.service_name }}
+            CD manifest update FAILED for: ${{ inputs.service_name }}
 
             Image Tag  : ${{ inputs.image_tag }}
             Values File: helm/${{ inputs.values_key }}/values.yaml

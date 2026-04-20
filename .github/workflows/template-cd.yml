@@ -33,7 +33,7 @@ jobs:
       - name: Checkout ArgoCDrepo
         uses: actions/checkout@v4
         with:
-          repository: Medimesh-grp3/ArgoCDrepo
+          repository: Medimesh-grp3/manifest_repo
           token: ${{ secrets.MANIFEST_REPO_PAT }}
           ref: main
 

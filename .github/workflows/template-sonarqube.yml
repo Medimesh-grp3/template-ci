@@ -29,7 +29,7 @@ on:
 
 jobs:
   sonarqube:
-    name: "① SonarQube — ${{ inputs.service_name }}"
+    name: "1. SonarQube — ${{ inputs.service_name }}"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -56,11 +56,11 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "❌ MediMesh CI Failed — SonarQube (${{ inputs.service_name }})"
+          subject: "MediMesh CI Failed — SonarQube (${{ inputs.service_name }})"
           to: ${{ secrets.ALERT_EMAIL }}
           from: MediMesh CI Pipeline
           body: |
-            ❌ SonarQube scan FAILED for: ${{ inputs.service_name }}
+            SonarQube scan FAILED for: ${{ inputs.service_name }}
 
             Branch : ${{ github.ref_name }}
             Commit : ${{ github.sha }}

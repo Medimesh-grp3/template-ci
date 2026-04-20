@@ -678,7 +678,7 @@ jobs:
     needs: docker
     if: success() && github.event_name != 'pull_request'
     steps:
-      - name: Checkout ArgoCD Repo
+      - name: Checkout Manifest Repo
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.manifest_repo }}
@@ -695,23 +695,23 @@ jobs:
       - name: Show Current Tag
         run: |
           echo "Current tag for ${{ inputs.values_key }}:"
-          yq '.${{ inputs.values_key }}.image.tag' helm/medimesh/values.yaml
+          yq '.image.tag' helm/${{ inputs.values_key }}/values.yaml
 
       - name: Update Image Tag
         run: |
           yq -i \
-            '.${{ inputs.values_key }}.image.tag = "${{ needs.docker.outputs.image_tag }}"' \
-            helm/medimesh/values.yaml
+            '.image.tag = "${{ needs.docker.outputs.image_tag }}"' \
+            helm/${{ inputs.values_key }}/values.yaml
 
           echo "New tag for ${{ inputs.values_key }}:"
-          yq '.${{ inputs.values_key }}.image.tag' helm/medimesh/values.yaml
+          yq '.image.tag' helm/${{ inputs.values_key }}/values.yaml
 
       - name: Commit and Push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add helm/medimesh/values.yaml
+          git add helm/${{ inputs.values_key }}/values.yaml
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -742,11 +742,11 @@ jobs:
             ❌ CD manifest update FAILED for: ${{ inputs.service_name }}
 
             Image Tag  : ${{ needs.docker.outputs.image_tag }}
-            Values Key : ${{ inputs.values_key }}
+            Values File: helm/${{ inputs.values_key }}/values.yaml
             Author     : ${{ github.actor }}
 
             Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
+            
   # ─────────────────────────────────────────────────────────────
   # ✅ Success Notification
   # ─────────────────────────────────────────────────────────────

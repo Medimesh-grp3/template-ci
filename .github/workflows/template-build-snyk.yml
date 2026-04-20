@@ -93,7 +93,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@master
+        uses: snyk/actions/setup@v2
 
       - name: Install snyk-to-html
         run: npm install -g snyk-to-html

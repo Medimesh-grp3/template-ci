@@ -47,23 +47,23 @@ jobs:
       - name: Show current tag
         run: |
           echo "Current tag for ${{ inputs.values_key }}:"
-          yq '.image.tag' helm/${{ inputs.values_key }}/values.yaml
+          yq '.image.tag' helm/medimesh/${{ inputs.values_key }}/values.yaml
 
       - name: Update image tag
         run: |
           yq -i \
             '.image.tag = "${{ inputs.image_tag }}"' \
-            helm/${{ inputs.values_key }}/values.yaml
+            helm/medimesh/${{ inputs.values_key }}/values.yaml
 
           echo "New tag for ${{ inputs.values_key }}:"
-          yq '.image.tag' helm/${{ inputs.values_key }}/values.yaml
+          yq '.image.tag' helm/medimesh/${{ inputs.values_key }}/values.yaml
 
       - name: Commit and push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add helm/${{ inputs.values_key }}/values.yaml
+          git add helm/medimesh/${{ inputs.values_key }}/values.yaml
 
           if git diff --staged --quiet; then
             echo "No changes to commit"

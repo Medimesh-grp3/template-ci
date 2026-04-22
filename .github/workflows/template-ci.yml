@@ -34,7 +34,7 @@ on:
         description: "ArgoCD manifest repository (org/repo)"
         required: false
         type: string
-        default: "Medimesh-grp3/manifest_repo"
+        default: "Medimesh-grp3/ArgoCDrepo"
 
     secrets:
       DOCKERHUB_USERNAME:
